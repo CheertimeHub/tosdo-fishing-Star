@@ -5,6 +5,21 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx    = canvas.getContext('2d');
 
+// polyfill roundRect สำหรับ browser เก่า
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y,     x + w, y + r,     r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x,     y + h, x,     y + h - r, r);
+  ctx.lineTo(x,     y + r);
+  ctx.arcTo(x,     y,     x + r, y,         r);
+  ctx.closePath();
+}
+
 const W       = canvas.width;   // 800
 const H       = canvas.height;  // 500
 const WATER_Y = 160;            // y ผิวน้ำ
@@ -25,6 +40,7 @@ const GameManager = {
     ScoreManager.reset();
     HungerSystem.reset();
     FishSpawner.reset();
+    Player.reset();
     FishingController.reset();
     popups.length = 0;
   },
@@ -80,11 +96,12 @@ const HungerSystem = {
 // ── Fish Data ────────────────────────────────────────────────────────────────
 
 const FISH_TYPES = [
-  { name: 'ปลาทอง',     score:  100, hunger: 15, speed: 110, size: 22, color: '#FFD700', isJunk: false },
-  { name: 'ปลาใหญ่',    score:  500, hunger: 35, speed:  55, size: 40, color: '#64CDFF', isJunk: false },
-  { name: 'ปลาเร็ว',    score:  200, hunger: 10, speed: 190, size: 16, color: '#90EE90', isJunk: false },
-  { name: 'หม้อโอเดน',  score: 2000, hunger: 60, speed:  40, size: 48, color: '#F4A460', isJunk: false },
-  { name: 'กระป๋อง',    score: -150, hunger:  0, speed:  75, size: 20, color: '#888',    isJunk: true  },
+  // ยิ่งตัวเล็ก ยิ่งได้คะแนนเยอะ
+  { name: 'ปลาเร็ว',    score:  800, hunger: 10, speed: 190, size: 16, color: '#90EE90', isJunk: false }, // เล็กสุด + เร็วสุด → แพงสุด
+  { name: 'ปลาทอง',     score:  400, hunger: 15, speed: 110, size: 22, color: '#FFD700', isJunk: false }, // กลาง
+  { name: 'ปลาใหญ่',    score:  150, hunger: 35, speed:  55, size: 40, color: '#64CDFF', isJunk: false }, // ใหญ่ → ถูก
+  { name: 'หม้อโอเดน',  score:   50, hunger: 60, speed:  40, size: 48, color: '#F4A460', isJunk: false }, // ใหญ่สุด → คะแนนน้อย แต่เติม hunger เยอะ
+  { name: 'กระป๋อง',    score: -200, hunger:  0, speed:  75, size: 20, color: '#888',    isJunk: true  },
 ];
 
 // ── Fish Entity ──────────────────────────────────────────────────────────────
@@ -120,7 +137,7 @@ class Fish {
       ctx.strokeStyle = '#555';
       ctx.lineWidth   = 2;
       ctx.beginPath();
-      ctx.roundRect(-s * 0.5, -s * 0.6, s, s * 1.2, 4);
+      roundRect(-s * 0.5, -s * 0.6, s, s * 1.2, 4);
       ctx.fill(); ctx.stroke();
       // เส้นบนกระป๋อง
       ctx.strokeStyle = '#aaa';
@@ -220,13 +237,45 @@ const FishSpawner = {
   },
 };
 
+// ── Player Movement ──────────────────────────────────────────────────────────
+
+const Player = {
+  x:            W / 2,
+  targetX:      W / 2,
+  speed:        90,          // px/sec
+  changeTimer:  0,
+  changeEvery:  2.2,         // วินาทีที่เปลี่ยนทิศ
+  minX:         60,
+  maxX:         W - 60,
+
+  reset() { this.x = W / 2; this.targetX = W / 2; this.changeTimer = 0; },
+
+  update(dt) {
+    if (GameManager.state !== State.PLAYING) return;
+
+    this.changeTimer -= dt;
+    if (this.changeTimer <= 0) {
+      this.targetX     = this.minX + Math.random() * (this.maxX - this.minX);
+      this.changeTimer = this.changeEvery + Math.random() * 1.5;
+    }
+
+    // เคลื่อนไปหา target อย่างนุ่มนวล
+    const dx   = this.targetX - this.x;
+    const step = Math.min(Math.abs(dx), this.speed * dt);
+    this.x    += Math.sign(dx) * step;
+  },
+
+  get rodX() { return this.x + 47; },   // ปลาย rod อยู่ขวาตัวละคร
+  get rodY() { return WATER_Y - 8; },
+};
+
 // ── Fishing Controller ───────────────────────────────────────────────────────
 
 const HookSt = { IDLE: 0, DESCENDING: 1, WAITING: 2, ASCENDING: 3 };
 
 const FishingController = {
-  rodX: 108, rodY: WATER_Y - 8,   // จุดปลาย rod
-  hookX: 108, hookY: WATER_Y - 8,
+  // hookX ล็อคตอนเริ่ม cast — ไม่ตามผู้เล่นขณะสายลงน้ำ
+  hookX: W / 2 + 47, hookY: WATER_Y - 8,
 
   st:           HookSt.IDLE,
   waitTimer:    0,
@@ -238,8 +287,8 @@ const FishingController = {
   bubbles: [],
 
   reset() {
-    this.hookX    = this.rodX;
-    this.hookY    = this.rodY;
+    this.hookX    = Player.rodX;
+    this.hookY    = Player.rodY;
     this.st       = HookSt.IDLE;
     this.bubbles  = [];
   },
@@ -253,7 +302,14 @@ const FishingController = {
 
     switch (this.st) {
       case HookSt.IDLE:
-        if (mouseHeld) this.st = HookSt.DESCENDING;
+        // hook ตามผู้เล่นตอนยังไม่ cast
+        this.hookX = Player.rodX;
+        this.hookY = Player.rodY;
+        if (mouseHeld) {
+          // ล็อค hookX ณ ตำแหน่งปัจจุบัน แล้วเริ่ม cast
+          this.hookX = Player.rodX;
+          this.st    = HookSt.DESCENDING;
+        }
         break;
 
       case HookSt.DESCENDING:
@@ -275,7 +331,7 @@ const FishingController = {
 
       case HookSt.ASCENDING:
         this.hookY -= this.ascentSpeed * dt;
-        if (this.hookY <= this.rodY) { this.hookY = this.rodY; this.st = HookSt.IDLE; }
+        if (this.hookY <= Player.rodY) { this.hookY = Player.rodY; this.st = HookSt.IDLE; }
         break;
     }
 
@@ -292,9 +348,9 @@ const FishingController = {
     ctx.lineWidth   = 1.5;
     ctx.setLineDash([]);
     ctx.beginPath();
-    ctx.moveTo(this.rodX, this.rodY);
+    ctx.moveTo(Player.rodX, Player.rodY);
     // เส้นโค้งเล็กน้อยตามแรงโน้มถ่วง
-    const mx = this.hookX + 6, my = (this.rodY + this.hookY) / 2 + 8;
+    const mx = this.hookX + 6, my = (Player.rodY + this.hookY) / 2 + 8;
     ctx.quadraticCurveTo(mx, my, this.hookX, this.hookY);
     ctx.stroke();
 
@@ -421,7 +477,7 @@ function drawCloud(cx, cy, scale) {
 // ── Player (Placeholder) ─────────────────────────────────────────────────────
 
 function drawPlayer() {
-  const px = 68, py = WATER_Y + 4;
+  const px = Player.x - 22, py = WATER_Y + 4;
 
   // ปลา mount (สีทอง)
   ctx.fillStyle = '#FFD700';
@@ -464,7 +520,7 @@ function drawPlayer() {
   ctx.lineCap     = 'round';
   ctx.beginPath();
   ctx.moveTo(px + 8, py - 28);
-  ctx.quadraticCurveTo(px + 30, py - 25, FishingController.rodX, FishingController.rodY);
+  ctx.quadraticCurveTo(px + 30, py - 25, Player.rodX, Player.rodY);
   ctx.stroke();
   ctx.lineCap = 'butt';
 }
@@ -504,14 +560,13 @@ function drawUI() {
   // bg
   ctx.fillStyle = 'rgba(0,0,0,0.55)';
   ctx.beginPath();
-  ctx.roundRect(bx - 2, by + 2, bw + 4, bh + 4, 5);
+  roundRect(bx - 2, by + 2, bw + 4, bh + 4, 5);
   ctx.fill();
   // fill
   const pct   = HungerSystem.percent;
   const bColor = pct > 0.5 ? '#44DD44' : pct > 0.25 ? '#FFAA22' : '#FF3333';
   ctx.fillStyle = bColor;
-  ctx.beginPath();
-  ctx.roundRect(bx, by + 4, bw * pct, bh, 4);
+  roundRect(bx, by + 4, Math.max(0, bw * pct), bh, 4);
   ctx.fill();
 
   // hint
@@ -584,7 +639,7 @@ function drawGameOver() {
   ctx.strokeStyle = '#AA8800';
   ctx.lineWidth   = 3;
   ctx.beginPath();
-  ctx.roundRect(BTN.x, BTN.y, BTN.w, BTN.h, 10);
+  roundRect(BTN.x, BTN.y, BTN.w, BTN.h, 10);
   ctx.fill(); ctx.stroke();
 
   ctx.font        = 'bold 20px Arial';
@@ -635,6 +690,7 @@ function loop(ts) {
 
   // Update
   GameManager.update(dt);
+  Player.update(dt);
   HungerSystem.update(dt);
   FishingController.update(dt, mouseHeld);
   FishSpawner.update(dt);
