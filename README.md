@@ -1,77 +1,120 @@
-# 🎣 Tosdo Fishing Star
+# Tosdo Fishing Star
 
-A fun and automated fishing experience inspired by **Star Fishing** 🌌  
-This project focuses on creating a smooth, efficient, and customizable fishing system — whether for learning, experimenting, or just vibing with automation.
-
----
-
-## ✨ Features
-
-- 🎣 Auto Fishing System  
-- ⚡ Fast & responsive interaction  
-- 🧠 Smart detection / logic (reduce idle time)  
-- 💰 Resource management (optional extensions เช่น auto sell / farm)
-- 🛠️ Easy to modify & extend
+A simple and efficient auto-fishing project inspired by in-game fishing systems.
+Designed for learning automation, experimenting with logic, and improving workflow efficiency.
 
 ---
 
-## 🧩 Tech Stack
+## Features
 
-- Language: (ใส่ตามที่ใช้จริง เช่น Python / Lua / JS)
-- Libraries:
-  - (เช่น OpenCV / PyAutoGUI / etc.)
-- Platform:
-  - (เช่น Roblox / Desktop Automation / etc.)
+* Automated fishing system
+* Fast and responsive execution
+* Event detection logic
+* Continuous farming loop
+* Easy to customize and extend
 
 ---
 
-## 🚀 Getting Started
+## Demo
 
-### 1. Clone this repository
+![Demo](./assets/demo.gif)
+
+> Tip: Record your screen using tools like OBS or ShareX, then convert to GIF (e.g. ezgif.com) and place it in `/assets/demo.gif`
+
+---
+
+## Tech Stack
+
+* Language: Python *(update if needed)*
+* Libraries:
+
+  * PyAutoGUI
+  * OpenCV *(if used)*
+* Platform: Desktop automation / Game interaction
+
+---
+
+## Getting Started
+
+### 1. Clone the repository
+
 ```bash
 git clone https://github.com/CheertimeHub/tosdo-fishing-Star.git
 cd tosdo-fishing-Star
-2. Install dependencies
-# example
+```
+
+### 2. Install dependencies
+
+```bash
 pip install -r requirements.txt
-3. Run the project
-# example
+```
+
+### 3. Run the project
+
+```bash
 python main.py
-⚙️ Configuration
+```
 
-You can customize behavior via:
+---
 
-Fishing delay / timing
-Detection sensitivity
-Auto-sell conditions
-UI / control bindings
-📸 Preview
+## Configuration
 
-(ใส่ screenshot หรือ gif โชว์ตอนทำงาน จะโคตร boost ความน่าใช้)
+You can adjust parameters such as:
 
-🧠 How it works
+* Fishing delay and timing
+* Detection sensitivity
+* Loop behavior
+* Input controls
 
-This project simulates or automates fishing behavior by:
+Modify values directly in the script or configuration file.
 
-Detecting in-game signals / events
-Triggering input actions (click / key / etc.)
-Looping logic for continuous farming
-⚠️ Disclaimer
+---
 
-This project is for educational purposes only.
-Use responsibly and respect the rules of the platform/game you are working with.
+## How It Works
 
-🤝 Contributing
+The system automates fishing by:
 
-Feel free to:
+1. Monitoring screen or in-game signals
+2. Detecting fishing events
+3. Triggering input actions
+4. Repeating the loop for continuous operation
 
-Fork the repo 🍴
-Create a new branch 🌱
-Submit a pull request 🚀
-📜 License
+---
 
-MIT License (or your chosen license)
+## Project Structure
 
-💬 Credits
+```
+tosdo-fishing-Star/
+│
+├── main.py
+├── requirements.txt
+├── assets/
+│   └── demo.gif
+└── README.md
+```
 
-Made with 💙 by CheertimeHub
+---
+
+## Disclaimer
+
+This project is intended for educational purposes only.
+Use responsibly and follow the rules of the platform or game.
+
+---
+
+## Contributing
+
+Contributions are welcome.
+Feel free to fork the repository and submit a pull request.
+
+---
+
+## License
+
+MIT License
+
+---
+
+## Credits
+
+CheertimeHub
